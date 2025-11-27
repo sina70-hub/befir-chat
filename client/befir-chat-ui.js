@@ -1,7 +1,7 @@
 (function () {
   var d = document;
 
-  // اگر قبلاً چت ساخته شده، فقط نمایش/مخفی کن و برگرد
+  // اگر قبلاً چت ساخته شده بود، فقط نمایش/مخفی کن
   var existing = d.getElementById("befirChatBox");
   if (existing) {
     existing.style.display =
@@ -9,13 +9,14 @@
     return;
   }
 
-  // --- وضعیت داخلی فقط در حافظه (هیچ localStorage) ---
+  // --- وضعیت داخلی فقط در حافظه (هیچ localStorage ای نیست) ---
   var state = {
     step: "language", // language | form | chat
     lang: "fa",       // fa | en | ku
     minimized: false,
+    started: false,
     user: { name: "", phone: "", email: "" },
-    messages: []      // {from:'user'|'bot'|'system', text:string, time:number}
+    messages: []      // { from: 'user'|'bot', text, time }
   };
 
   var attachedFile = null;
@@ -27,6 +28,9 @@
       title: "گفتگو با بفر",
       status: "پاسخگوی مسیر و سوالات شما هستیم 🌿",
       chooseLangTitle: "زبان خود را انتخاب کنید",
+      langFa: "فارسی",
+      langEn: "انگلیسی",
+      langKu: "کوردی",
       formTitle: "شروع گفتگو",
       formSubtitle: "لطفاً اطلاعات کوتاه زیر را وارد کنید:",
       nameLabel: "نام",
@@ -42,14 +46,14 @@
       emailError: "ایمیل نامعتبر است.",
       validationError: "لطفاً خطاهای فرم را برطرف کنید.",
       inputPlaceholder: "اینجا پیام خود را بنویسید...",
-      attachLabel: "ضمیمه",
       attachHint: "می‌توانید اسکرین‌شات یا تصویر مشکل‌تان را بفرستید.",
       fileTooBig: "حجم تصویر زیاد است؛ حداکثر ۲ مگابایت.",
       fileSelected: "تصویر انتخاب شد: {name}",
       imageTag: "[تصویر پیوست شد]",
+      minText: "بفر در حال پاسخگویی…",
       autoHello: "سلام {name} 👋\nبه گفتگوی بفر خوش آمدی.",
       autoIntro: "چه کمکی از دستم برمیاد؟ می‌تونی مشکلت، پروژه‌ات یا سؤالت رو برام بنویسی.",
-      autoReply: "پیام‌ات رسید 🙏\nاین نسخه فعلاً آزمایشی است؛ در نسخه‌ی نهایی به نیتن و هوش مصنوعی بفر وصل می‌شوم.",
+      autoReply: "پیامت رسید 🙏\nاین نسخه فعلاً آزمایشی است؛ در نسخه نهایی به نیتن و هوش مصنوعی وصل می‌شوم.",
       btnSend: "➤"
     },
     en: {
@@ -57,6 +61,9 @@
       title: "Befir Chat",
       status: "We’re here to support your path 🌿",
       chooseLangTitle: "Choose your language",
+      langFa: "Persian",
+      langEn: "English",
+      langKu: "Kurdî",
       formTitle: "Start conversation",
       formSubtitle: "Please fill out this short form:",
       nameLabel: "Name",
@@ -72,22 +79,25 @@
       emailError: "Email looks invalid.",
       validationError: "Please fix the form errors.",
       inputPlaceholder: "Type your message here...",
-      attachLabel: "Attach",
       attachHint: "You can attach a screenshot or image.",
       fileTooBig: "Image is too large (max 2 MB).",
       fileSelected: "Image selected: {name}",
       imageTag: "[Image attached]",
+      minText: "Befir is replying…",
       autoHello: "Hi {name} 👋\nWelcome to Befir chat.",
       autoIntro: "How can I help you today? Feel free to describe your question or project.",
-      autoReply: "Got your message 🙏\nThis is a demo version — in production I’ll be connected to N8N & AI.",
+      autoReply: "Got your message 🙏\nThis is a demo version. In production I’ll be connected to N8N & AI.",
       btnSend: "➤"
     },
     ku: {
       dir: "rtl",
-      title: "گفتوگۆ لەگەڵ بەفر",
-      status: "ئه‌مه‌ ئامادەین یارمەتیت بدەین 🌿",
-      chooseLangTitle: "زمانێک هەڵبژێرە",
-      formTitle: "دەستپیکردنی گفتوگۆ",
+      title: "گوتوگۆ لەگەڵ بەفر",
+      status: "ئێمە ئامادەین یارمەتیت بدەین 🌿",
+      chooseLangTitle: "زمان هەڵبژێرە",
+      langFa: "فارسی",
+      langEn: "ئینگلیزی",
+      langKu: "کوردی",
+      formTitle: "دەستپێکردنی گوتوگۆ",
       formSubtitle: "تکایە زانیاریەکانت بنووسە:",
       nameLabel: "ناو",
       phoneLabel: "ژمارەی مۆبایل",
@@ -97,41 +107,74 @@
       emailPlaceholder: "example@mail.com",
       back: "گەڕانەوە",
       startChat: "دەستپێکردن لە چات لەگەڵ بەفر",
-      nameError: "ناو پێویستە کەمەکە ٢ پیت بێت.",
+      nameError: "ناو پێویستە لانیکم ٢ پیت بێت.",
       phoneError: "ژمارەی مۆبایل دروست نییە.",
       emailError: "ئیمەیل دروست نییە.",
       validationError: "تکایە هەڵەکان چاک بکە.",
       inputPlaceholder: "پەیامەکەت لێرە بنووسە...",
-      attachLabel: "هاوپێچ",
-      attachHint: "دەتوانیت وێنە یان سکرین‌شۆت نێرە.",
+      attachHint: "دەتوانیت وێنە یان سکڕین‌شۆت نێرە.",
       fileTooBig: "قەبارەی وێنە زۆر گەورەیە (زۆرترین ٢MB).",
       fileSelected: "وێنە هەڵبژێردرا: {name}",
       imageTag: "[وێنە هاوپێچ کرا]",
+      minText: "بفر لە وەڵام دانیدایە…",
       autoHello: "سڵاو {name} 👋\nبەخێربێیت بۆ چاتی بەفر.",
-      autoIntro: "چۆن دەتوانم یارمەتیت بدەم؟ پرسیارەکەت یان پرۆژەکەت باسی بکە.",
+      autoIntro: "چۆن دەتوانم یارمەتیت بدەم؟ پرسیارەکەت یان پرۆژەکەت باس بکە.",
       autoReply: "پەیامەکەت گەیشت 🙏\nئەم وەشانە تاقیکارییە؛ دواتر بە نیتن و هوش مەصنوعی دادەگرێت.",
       btnSend: "➤"
     }
   };
 
-  // --- استایل کلی با <style> ---
+  // --- استایل کلی ---
   var style = d.createElement("style");
   style.textContent = `
+  #befirChatBox, #befirChatBox * { box-sizing: border-box; }
+
   #befirChatBox {
-    box-sizing: border-box;
-  }
-  #befirChatBox * {
-    box-sizing: border-box;
-  }
-  .befir-shadow {
+    position: fixed;
+    bottom: 90px;
+    left: 20px;
+    width: 360px;
+    max-width: 96vw;
+    height: 480px;
+    max-height: 80vh;
+    background: #ffffff;
+    border-radius: 16px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",Tahoma,sans-serif;
     box-shadow: 0 16px 40px rgba(0,0,0,0.35);
+    z-index: 999999;
   }
+
+  #befirChatBox.befir-minimized {
+    height: 52px !important;
+  }
+
+  @media (max-width: 768px) {
+    #befirChatBox {
+      bottom: 10px;
+      left: 10px;
+      right: 10px;
+      width: auto;
+      height: min(90vh, 520px);
+      border-radius: 16px;
+    }
+    #befirChatBox.befir-minimized {
+      bottom: 10px;
+      left: 10px;
+      right: 10px;
+      width: auto;
+      height: 52px !important;
+    }
+  }
+
   .befir-header {
     background: linear-gradient(135deg,#ffdd55,#ffcc00);
-    padding: 8px 10px;
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
+    padding: 6px 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
   }
   .befir-header-left {
     display:flex;
@@ -146,9 +189,12 @@
     display:flex;
     align-items:center;
     justify-content:center;
-    font-size:16px;
+    font-size:18px;
     color:#fff;
-    font-weight:bold;
+  }
+  .befir-header-texts {
+    display:flex;
+    flex-direction:column;
   }
   .befir-header-title {
     font-size:13px;
@@ -163,7 +209,6 @@
   .befir-header-actions {
     display:flex;
     gap:6px;
-    align-items:center;
   }
   .befir-icon-btn {
     border:none;
@@ -181,15 +226,17 @@
   .befir-icon-btn:hover {
     background:rgba(0,0,0,0.13);
   }
+
   .befir-body {
     flex:1;
     background:#f6f7fb;
     padding:10px;
     font-size:13px;
-    overflow:hidden;
     display:flex;
     flex-direction:column;
+    overflow:hidden;
   }
+
   .befir-screen {
     display:none;
     height:100%;
@@ -198,16 +245,22 @@
     display:flex;
     flex-direction:column;
   }
+
+  .befir-lang-title {
+    font-weight:600;
+    margin-bottom:6px;
+    text-align:center;
+  }
   .befir-lang-buttons {
     display:flex;
     flex-direction:column;
     gap:8px;
     margin-top:10px;
   }
-  .befir-pill-btn {
+  .befir-lang-btn {
     border-radius:999px;
     border:none;
-    padding:8px 10px;
+    padding:8px 12px;
     font-size:13px;
     cursor:pointer;
     background:#fff;
@@ -216,14 +269,15 @@
     align-items:center;
     box-shadow:0 4px 10px rgba(0,0,0,0.06);
   }
-  .befir-pill-btn span {
+  .befir-lang-btn span {
     font-size:11px;
     opacity:0.8;
   }
-  .befir-pill-btn:hover {
+  .befir-lang-btn:hover {
     box-shadow:0 6px 16px rgba(0,0,0,0.14);
     transform:translateY(-1px);
   }
+
   .befir-form-group {
     margin-bottom:8px;
   }
@@ -251,6 +305,11 @@
     color:#d11;
     margin-top:2px;
   }
+  .befir-form-subtitle {
+    font-size:11px;
+    color:#666;
+    margin-bottom:8px;
+  }
   .befir-form-buttons {
     display:flex;
     gap:8px;
@@ -273,6 +332,7 @@
     background:#111;
     color:#fff;
   }
+
   .befir-chat-messages {
     flex:1;
     overflow-y:auto;
@@ -308,15 +368,16 @@
     color:#777;
     margin-top:2px;
   }
-  .befir-attach-hint {
-    font-size:11px;
-    color:#666;
-    margin-bottom:6px;
-  }
+
   .befir-chat-footer {
     border-top:1px solid #ddd;
     padding:6px 6px 8px;
     background:#fff;
+  }
+  .befir-attach-hint {
+    font-size:11px;
+    color:#666;
+    margin-bottom:4px;
   }
   .befir-input-row {
     display:flex;
@@ -360,51 +421,35 @@
     margin-top:3px;
     min-height:14px;
   }
-
-  @media (max-width: 768px) {
-    #befirChatBox {
-      left:0 !important;
-      right:0 !important;
-      bottom:0 !important;
-      width:100% !important;
-      height:100% !important;
-      border-radius:0 !important;
-    }
-  }
   `;
   d.head.appendChild(style);
 
   // --- ساخت باکس اصلی ---
   var box = d.createElement("div");
   box.id = "befirChatBox";
-  box.className = "befir-shadow";
-  box.style.position = "fixed";
-  box.style.bottom = "90px";
-  box.style.left = "20px";
-  box.style.width = "360px";
-  box.style.maxWidth = "96vw";
-  box.style.height = "480px";
-  box.style.maxHeight = "80vh";
-  box.style.background = "#ffffff";
-  box.style.borderRadius = "16px";
-  box.style.display = "flex";
-  box.style.flexDirection = "column";
-  box.style.overflow = "hidden";
-  box.style.fontFamily =
-    '-apple-system,BlinkMacSystemFont,"Segoe UI",Tahoma,sans-serif';
-
   d.body.appendChild(box);
 
   function applyDir() {
     var t = TEXTS[state.lang];
     var dir = t.dir || "rtl";
     box.dir = dir;
-    if (dir === "ltr") {
-      box.style.textAlign = "left";
+    if (state.step === "language") {
+      // در صفحه انتخاب زبان، وسط‌چین
+      box.style.textAlign = "center";
     } else {
-      box.style.textAlign = "right";
+      box.style.textAlign = dir === "rtl" ? "right" : "left";
     }
   }
+
+  function applyLayout() {
+    if (state.minimized) {
+      box.classList.add("befir-minimized");
+    } else {
+      box.classList.remove("befir-minimized");
+    }
+  }
+
+  window.addEventListener("resize", applyLayout);
 
   function formatTime(ts) {
     var date = new Date(ts);
@@ -413,44 +458,22 @@
     return h + ":" + m;
   }
 
-  function applyLayout() {
-    if (state.minimized) {
-      box.style.height = "52px";
-    } else {
-      if (window.innerWidth <= 768) {
-        box.style.left = "0";
-        box.style.right = "0";
-        box.style.bottom = "0";
-        box.style.height = "100%";
-        box.style.width = "100%";
-        box.style.borderRadius = "0";
-      } else {
-        box.style.left = "20px";
-        box.style.bottom = "90px";
-        box.style.width = "360px";
-        box.style.height = "480px";
-        box.style.borderRadius = "16px";
-      }
-    }
-  }
-  window.addEventListener("resize", applyLayout);
-
   function render() {
     applyDir();
     applyLayout();
     var t = TEXTS[state.lang];
 
-    // هدر
+    // --- هدر ---
     var headerHTML =
       '<div class="befir-header">' +
       '<div class="befir-header-left">' +
-      '<div class="befir-avatar">ب</div>' +
-      '<div>' +
+      '<div class="befir-avatar">👩</div>' +
+      '<div class="befir-header-texts">' +
       '<div class="befir-header-title">' +
       t.title +
       "</div>" +
       '<div class="befir-header-status">' +
-      t.status +
+      (state.minimized ? t.minText : t.status) +
       "</div>" +
       "</div>" +
       "</div>" +
@@ -462,18 +485,25 @@
       "</div>" +
       "</div>";
 
+    // --- بدنه ---
     var bodyHTML = '<div class="befir-body">';
 
     if (state.step === "language") {
       bodyHTML +=
         '<div class="befir-screen active" id="befir-screen-lang">' +
-        '<div style="font-weight:600;margin-bottom:6px;">' +
+        '<div class="befir-lang-title">' +
         t.chooseLangTitle +
         "</div>" +
         '<div class="befir-lang-buttons">' +
-        '<button class="befir-pill-btn" data-lang="fa">فارسی<span>Persian</span></button>' +
-        '<button class="befir-pill-btn" data-lang="en">English<span>English</span></button>' +
-        '<button class="befir-pill-btn" data-lang="ku">کوردی<span>Kurdî</span></button>' +
+        '<button class="befir-lang-btn" data-lang="fa">' +
+        t.langFa +
+        "<span>Persian</span></button>" +
+        '<button class="befir-lang-btn" data-lang="en">' +
+        t.langEn +
+        "<span>English</span></button>" +
+        '<button class="befir-lang-btn" data-lang="ku">' +
+        t.langKu +
+        "<span>Kurdî</span></button>" +
         "</div>" +
         "</div>";
     } else if (state.step === "form") {
@@ -482,7 +512,7 @@
         '<div style="font-weight:600;margin-bottom:4px;">' +
         t.formTitle +
         "</div>" +
-        '<div style="font-size:11px;color:#666;margin-bottom:8px;">' +
+        '<div class="befir-form-subtitle">' +
         t.formSubtitle +
         "</div>" +
         '<div class="befir-form-group">' +
@@ -529,7 +559,6 @@
         "</div>" +
         "</div>";
     } else {
-      // صفحه چت
       bodyHTML +=
         '<div class="befir-screen active" id="befir-screen-chat">' +
         '<div class="befir-chat-messages" id="befir-messages"></div>' +
@@ -538,7 +567,7 @@
         t.attachHint +
         "</div>" +
         '<div class="befir-input-row">' +
-        '<button class="befir-circle-icon" type="button" id="befir-attach-btn">📷</button>' +
+        '<button class="befir-circle-icon" type="button" id="befir-attach-btn">📷+</button>' +
         '<input type="file" id="befir-file" accept="image/*" style="display:none;">' +
         '<textarea class="befir-textarea" id="befir-input" placeholder="' +
         t.inputPlaceholder +
@@ -552,11 +581,11 @@
         "</div>";
     }
 
-    bodyHTML += "</div>";
+    bodyHTML += "</div>"; // end body
 
     box.innerHTML = headerHTML + bodyHTML;
 
-    // هدر اکشن‌ها
+    // --- هدر: اکشن‌ها ---
     var minimizeBtn = box.querySelector('[data-act="minimize"]');
     var closeBtn = box.querySelector('[data-act="close"]');
     if (minimizeBtn) {
@@ -571,17 +600,17 @@
       };
     }
 
-    // انتخاب زبان
-    box.querySelectorAll(".befir-pill-btn[data-lang]").forEach(function (btn) {
+    // --- صفحه انتخاب زبان ---
+    box.querySelectorAll(".befir-lang-btn[data-lang]").forEach(function (btn) {
       btn.onclick = function () {
-        var lang = btn.getAttribute("data-lang");
-        state.lang = lang;
+        var lng = btn.getAttribute("data-lang");
+        state.lang = lng;
         state.step = "form";
         render();
       };
     });
 
-    // فرم
+    // --- فرم ---
     var backLangBtn = box.querySelector('[data-act="back-lang"]');
     var startChatBtn = box.querySelector('[data-act="start-chat"]');
     if (backLangBtn) {
@@ -640,131 +669,135 @@
         state.step = "chat";
         state.messages = [];
         attachedFile = null;
+        state.started = false;
         render();
         initChat();
       };
     }
 
-    // صفحه چت
+    // --- صفحه چت ---
     if (state.step === "chat") {
-      var msgContainer = d.getElementById("befir-messages");
-      var inputEl = d.getElementById("befir-input");
-      var sendBtn = d.getElementById("befir-send-btn");
-      var attachBtn = d.getElementById("befir-attach-btn");
-      var fileInput = d.getElementById("befir-file");
-      var fileInfo = d.getElementById("befir-file-info");
-      var t = TEXTS[state.lang];
-
-      function renderMessages() {
-        if (!msgContainer) return;
-        msgContainer.innerHTML = "";
-        state.messages.forEach(function (m) {
-          var row = d.createElement("div");
-          row.className =
-            "befir-msg-row " + (m.from === "user" ? "befir-user" : "befir-bot");
-          var bubble = d.createElement("div");
-          bubble.className = "befir-msg-bubble";
-          bubble.textContent = m.text;
-          var time = d.createElement("div");
-          time.className = "befir-msg-time";
-          time.textContent = formatTime(m.time);
-          row.appendChild(bubble);
-          row.appendChild(time);
-          msgContainer.appendChild(row);
-        });
-        msgContainer.scrollTop = msgContainer.scrollHeight + 9999;
-      }
-
-      function addMessage(from, text) {
-        state.messages.push({
-          from: from,
-          text: text,
-          time: Date.now()
-        });
-        renderMessages();
-      }
-
-      // اولین بار: پیام خوش‌آمد
-      if (!state._initiated) {
-        state._initiated = true;
-        var hello = t.autoHello.replace("{name}", state.user.name || "");
-        addMessage("bot", hello);
-        addMessage("bot", t.autoIntro);
-      } else {
-        renderMessages();
-      }
-
-      if (attachBtn && fileInput && fileInfo) {
-        attachBtn.onclick = function () {
-          fileInput.click();
-        };
-        fileInput.onchange = function (e) {
-          var file = e.target.files[0];
-          if (!file) {
-            attachedFile = null;
-            fileInfo.textContent = "";
-            return;
-          }
-          if (file.size > 2 * 1024 * 1024) {
-            attachedFile = null;
-            fileInput.value = "";
-            fileInfo.textContent = t.fileTooBig;
-            return;
-          }
-          attachedFile = file;
-          fileInfo.textContent = t.fileSelected.replace("{name}", file.name);
-        };
-      }
-
-      function send() {
-        if (!inputEl) return;
-        var text = (inputEl.value || "").trim();
-        if (!text && !attachedFile) return;
-
-        var messageText = text;
-        if (attachedFile) {
-          messageText += "\n" + t.imageTag;
-        }
-
-        addMessage("user", messageText);
-        inputEl.value = "";
-        if (fileInput) fileInput.value = "";
-        if (fileInfo) fileInfo.textContent = "";
-        var fileToSend = attachedFile;
-        attachedFile = null;
-
-        // اینجا بعداً به n8n / بک‌اند وصل می‌کنیم:
-        // sendToBackend({ lang:state.lang, user:state.user, text:text, file:fileToSend, history:state.messages });
-
-        // پاسخ اتومات، در زبان مناسب
-        setTimeout(function () {
-          addMessage("bot", t.autoReply);
-        }, 700);
-      }
-
-      if (sendBtn) sendBtn.onclick = send;
-      if (inputEl) {
-        inputEl.onkeydown = function (e) {
-          if (e.key === "Enter" && !e.shiftKey) {
-            e.preventDefault();
-            send();
-          }
-        };
-      }
+      initChatUI();
     }
 
-    // در حالت مینیمایز، بدنه را مخفی کن
+    // پنهان کردن بدنه در حالت مینیمایز
     var bodyEl = box.querySelector(".befir-body");
     if (bodyEl) {
       bodyEl.style.display = state.minimized ? "none" : "flex";
     }
   }
 
-  function initChat() {
-    // فعلاً منطق آغاز چت داخل render چت انجام شده
+  function initChatUI() {
+    var t = TEXTS[state.lang];
+    var msgContainer = d.getElementById("befir-messages");
+    var inputEl = d.getElementById("befir-input");
+    var sendBtn = d.getElementById("befir-send-btn");
+    var attachBtn = d.getElementById("befir-attach-btn");
+    var fileInput = d.getElementById("befir-file");
+    var fileInfo = d.getElementById("befir-file-info");
+
+    function renderMessages() {
+      if (!msgContainer) return;
+      msgContainer.innerHTML = "";
+      state.messages.forEach(function (m) {
+        var row = d.createElement("div");
+        row.className =
+          "befir-msg-row " + (m.from === "user" ? "befir-user" : "befir-bot");
+        var bubble = d.createElement("div");
+        bubble.className = "befir-msg-bubble";
+        bubble.textContent = m.text;
+        var time = d.createElement("div");
+        time.className = "befir-msg-time";
+        time.textContent = formatTime(m.time);
+        row.appendChild(bubble);
+        row.appendChild(time);
+        msgContainer.appendChild(row);
+      });
+      msgContainer.scrollTop = msgContainer.scrollHeight + 9999;
+    }
+
+    function addMessage(from, text) {
+      state.messages.push({
+        from: from,
+        text: text,
+        time: Date.now()
+      });
+      renderMessages();
+    }
+
+    // پیام خوش‌آمد فقط بار اول
+    if (!state.started) {
+      state.started = true;
+      var hello = t.autoHello.replace("{name}", state.user.name || "");
+      addMessage("bot", hello);
+      addMessage("bot", t.autoIntro);
+    } else {
+      renderMessages();
+    }
+
+    if (attachBtn && fileInput && fileInfo) {
+      attachBtn.onclick = function () {
+        fileInput.click();
+      };
+      fileInput.onchange = function (e) {
+        var file = e.target.files[0];
+        if (!file) {
+          attachedFile = null;
+          fileInfo.textContent = "";
+          return;
+        }
+        if (file.size > 2 * 1024 * 1024) {
+          attachedFile = null;
+          fileInput.value = "";
+          fileInfo.textContent = t.fileTooBig;
+          return;
+        }
+        attachedFile = file;
+        fileInfo.textContent = t.fileSelected.replace("{name}", file.name);
+      };
+    }
+
+    function send() {
+      if (!inputEl) return;
+      var text = (inputEl.value || "").trim();
+      if (!text && !attachedFile) return;
+
+      var messageText = text;
+      if (attachedFile) {
+        messageText += "\n" + t.imageTag;
+      }
+
+      addMessage("user", messageText);
+      inputEl.value = "";
+      if (fileInput) fileInput.value = "";
+      if (fileInfo) fileInfo.textContent = "";
+      var fileToSend = attachedFile;
+      attachedFile = null;
+
+      // اینجا بعداً به n8n / سرور وصل می‌کنیم:
+      // sendToBackend({ lang: state.lang, user: state.user, text: text, file: fileToSend, history: state.messages });
+
+      setTimeout(function () {
+        addMessage("bot", t.autoReply);
+      }, 700);
+    }
+
+    if (sendBtn) sendBtn.onclick = send;
+    if (inputEl) {
+      inputEl.onkeydown = function (e) {
+        if (e.key === "Enter" && !e.shiftKey) {
+          e.preventDefault();
+          send();
+        }
+      };
+    }
   }
 
-  // toggle برای دکمه بیرونی
+  function initChat() {
+    // در حال حاضر منطق آغاز چت در initChatUI است
+  }
+
+  // toggle برای استفاده احتمالی
   window.toggleBefirChat = function () {
     if (!box) return;
     if (box.style.display === "none") {
